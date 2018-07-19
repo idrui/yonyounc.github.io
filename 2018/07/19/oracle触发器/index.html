@@ -79,13 +79,17 @@
 
 
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="licj&#39;s blog">
-<meta property="og:url" content="https://licj.github.io/index.html">
+<meta name="description" content="【触发器与触发该触发器的SQL语句同属于一个事务】">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Oracle触发器">
+<meta property="og:url" content="https://licj.github.io/2018/07/19/oracle触发器/index.html">
 <meta property="og:site_name" content="licj&#39;s blog">
+<meta property="og:description" content="【触发器与触发该触发器的SQL语句同属于一个事务】">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-07-19T12:21:16.671Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="licj&#39;s blog">
+<meta name="twitter:title" content="Oracle触发器">
+<meta name="twitter:description" content="【触发器与触发该触发器的SQL语句同属于一个事务】">
 
 
 
@@ -115,13 +119,13 @@
 
 
 
-  <link rel="canonical" href="https://licj.github.io/"/>
+  <link rel="canonical" href="https://licj.github.io/2018/07/19/oracle触发器/"/>
 
 
 
 
 
-  <title>licj's blog</title>
+  <title>Oracle触发器 | licj's blog</title>
   
 
 
@@ -140,8 +144,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -214,9 +217,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -246,9 +249,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/07/19/oracle触发器/" itemprop="url">Oracle触发器</a></h1>
+          <h1 class="post-title" itemprop="name headline">Oracle触发器</h1>
         
 
         <div class="post-meta">
@@ -298,16 +299,96 @@
       
 
       
-        
-          <p><code>【触发器与触发该触发器的SQL语句同属于一个事务】</code><br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/07/19/oracle触发器/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
+        <p><code>【触发器与触发该触发器的SQL语句同属于一个事务】</code><br><a id="more"></a></p>
+<p> 触发器不允许发出任何事务控制语句，如commit、rollback、savepoint或者set transaction，它只能随着外部事务的提交、回滚而提交、回滚。<br>       【一点明确的地方】Insert触发器，其中新插入的数据对本事务是可见的。<br>       （但在oracle8i 以及更高的版本中，你可以创建作为自治事务而执行的触发器，在这种情况下，触发器可以做提交或回滚操作，而与触发该触发器的外部SQL所在的事务无关，声明自治事务需要 DECLARE PRAGMA AUTONOMOUS_TRANSACTION，自治事务中需要自己Commit ）</p>
+<pre><code>【触发器类型】
+ 1、 语句触发器（对insert、update、delete，注意的是无论update多少行，也只会调用一次update语句触发器。）
+ 2、 行触发器（for each row）
+ 3、 instead of 触发器
+ 4、 系统条件触发器（系统事件：数据库启动、关闭，服务器错误）
+ 5、 用户事件触发器（用户事件：用户登陆、注销，create / alter / drop / analyze / audit / grant / revoke / rename / truncate / logoff）
+
+【禁用和启用触发器】
+ alter trigger &lt;trigger_name&gt; disable;
+ alter trigger &lt;trigger_name&gt; enable;
+
+ 【触发器写法】 
+
+ create [or replace] trigger 触发器名 触发时间 触发事件
+ on 表名
+ [for each row]
+ pl/sql 语句
+
+ 触发器名：触发器对象的名称。由于触发器是数据库自动执行的，因此该名称只是一个名称，没有实质的用途。
+ 触发时间：指明触发器何时执行，该值可取：
+                     before, after, （instead of）
+                     区别：无论使用before与after，均可读取:old与:new的记录信息
+                               触发时机为before时，能修改:new的记录信息，不能修改:old记录信息
+                               触发时机为after时，:new与:old的信息均不能被修改
+                  BEFORE 
+                   To cause the database to fire the trigger before executing the triggering event. For row triggers, the trigger is fired before each affected row is changed.
+                 Restrictions on BEFORE Triggers 
+                 BEFORE triggers are subject to the following restrictions:
+                  You cannot specify a BEFORE trigger on a view or an object view.
+                  You can write to the :NEW value but not to the :OLD value.
+
+                 AFTER 
+                 To cause the database to fire the trigger after executing the triggering event. For row triggers, the trigger is fired after each affected row is changed.
+                   Restrictions on AFTER Triggers 
+                   AFTER triggers are subject to the following restrictions:
+                      You cannot specify an AFTER trigger on a view or an object view.
+                      You cannot write either the :OLD or the :NEW value.
+
+ 触发事件：指明哪些数据库动作会触发此触发器：
+                     insert：数据库插入会触发此触发器；
+                     update：数据库修改会触发此触发器；
+                     delete：数据库删除会触发此触发器。
+ 表 名：数据库触发器所在的表。
+ for each row：对表的每一行触发器执行一次。如果没有这一选项，则只对整个表执行一次。
+
+【实例】
+ CREATE OR REPLACE TRIGGER usertotemp
+  AFTER INSERT OR UPDATE OR DELETE
+  ON user_info
+  FOR EACH ROW
+ DECLARE
+  integrity_error   EXCEPTION;
+  errno             INTEGER;
+  errmsg            CHAR (200);
+  dummy             INTEGER;
+  FOUND             BOOLEAN;
+ BEGIN
+  IF INSERTING
+  THEN
+   INSERT INTO user_info_temp (id, username, password,createdate, status)
+   VALUES (:new.id, :new.username, :new.password, :new.createdate, :new.status);
+  ELSIF UPDATING
+  THEN
+   UPDATE user_info_temp
+      SET id = :new.id, username = :new.username, password = :new.password, status = :new.status
+    WHERE id = :old.id;
+  ELSIF DELETING
+  THEN
+   DELETE FROM user_info_temp
+    WHERE id = :old.id;
+  END IF;
+ EXCEPTION
+  WHEN integrity_error
+  THEN
+   raise_application_error (errno, errmsg);
+ END;
+
+ [为主健生成自增序列号]
+ create table foo(id number, data varchar2(20));
+ create sequence foo_seq;
+
+ create or replace trigger bifer_foo_id_pk
+ before insert on foo
+ for each row
+ begin
+     select foo_seq.nextval into :new.id from dual;
+ end;
+</code></pre>
       
     </div>
     
@@ -315,7 +396,44 @@
     
 
     
+      <div>
+        <div id="wechat_subscriber" style="display: block; padding: 10px 0; margin: 20px auto; width: 100%; text-align: center">
+    <img id="wechat_subscriber_qcode" src="/uploads/wechat-qcode.jpg" alt="licj wechat" style="width: 200px; max-width: 100%;"/>
+    <div>欢迎您扫一扫上面二维码，订阅我的微信公众号！</div>
+</div>
 
+      </div>
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+  <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    <span>打赏</span>
+  </button>
+  <div id="QR" style="display: none;">
+
+    
+      <div id="wechat" style="display: inline-block">
+        <img id="wechat_qr" src="/images/wechatpay.jpg" alt="licj 微信支付"/>
+        <p>微信支付</p>
+      </div>
+    
+
+    
+      <div id="alipay" style="display: inline-block">
+        <img id="alipay_qr" src="/images/alipay.jpg" alt="licj 支付宝"/>
+        <p>支付宝</p>
+      </div>
+    
+
+    
+
+  </div>
+</div>
+
+      </div>
     
 
     
@@ -324,136 +442,28 @@
       
 
       
-
-      
-
       
       
-        <div class="post-eof"></div>
+
       
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://licj.github.io/2018/06/19/nc633配置本地储存位置/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="licj">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="licj's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/06/19/nc633配置本地储存位置/" itemprop="url">nc633配置附件本地储存位置</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-19T17:27:33+08:00">
-                2018-06-19
-              </time>
+              <a href="/2018/06/19/nc633配置本地储存位置/" rel="next" title="nc633配置附件本地储存位置">
+                <i class="fa fa-chevron-left"></i> nc633配置附件本地储存位置
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          <p><code>首先进入nchome\ierp\sf\documentConfig.xml</code><br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/06/19/nc633配置本地储存位置/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -463,134 +473,11 @@
   </article>
 
 
-    
-      
 
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://licj.github.io/2018/06/12/nc633集团初始化行业未选择31解决方法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="licj">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="licj's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/06/12/nc633集团初始化行业未选择31解决方法/" itemprop="url">nc633集团初始化行业未选择31解决方法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-12T21:19:58+08:00">
-                2018-06-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <p><code>首先进入nchome\ierp\bin\industry_config.xml  改为31</code><br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/06/12/nc633集团初始化行业未选择31解决方法/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
+    <div class="post-spread">
       
     </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
   </div>
-  
-  
-  
-  </article>
-
-
-    
-  </section>
-
-  
 
 
           </div>
@@ -598,6 +485,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -794,6 +685,10 @@
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
